@@ -214,7 +214,7 @@ void PrintSpeedBar(int speed, int maxSpeed) {
   Serial.println("]");
 }
 
-----------------------------------------------------Main Logic---------------------------------------------
+//----------------------------------------------------Main Logic---------------------------------------------
 void loop(){
   ReadSensors();
   CalculateMotorSpeeds();
