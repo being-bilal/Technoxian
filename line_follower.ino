@@ -14,10 +14,12 @@ int maxSpeed = 200;  // Max speed
 int sensorPins[SENSOR_COUNT] = {A0, A1, A2, A3, A4, A5, 2, 3, 8, 9, 10, 11}; 
 int sensorValues[SENSOR_COUNT];
 // 12 sensors == Left side (2), Center (8), Right side (2)
-int sensorWeights[SENSOR_COUNT] = {-33, -28, -18, -13, -8, -3, 3, 8, 13, 18, 28, 33}; // distance between sensors == 5mm 
+int sensorWeights[SENSOR_COUNT] = {0, 0, -44, -31, -19, -6, 6, 19, 31, 44, 0, 0}; // distance between sensors == 12.50mm 
 
-bool onLeftEdge = (sensorValues[0] == 0 || sensorValues[1] == 0);    // 0 = black line detected
+bool onLeftEdge = (sensorValues[0] == 0 || sensorValues[1] == 0);    // 0 = black, 1 = white
 bool onRightEdge = (sensorValues[10] == 0 || sensorValues[11] == 0);
+unsigned long lineLostStartTime = 0;
+bool lineCurrentlyLost = false;
 
 // -----------------------------------------------PID Data---------------------------------------------
 float Kp = 0.0;
@@ -218,7 +220,19 @@ void loop(){
   CalculateMotorSpeeds();
   //PrintToSerialPlotter();
   //PrintSensorArray();
-  PrintToSerialMonitor();
+  //PrintToSerialMonitor();
+
+  // Line Lost (stopping the bot if the line is lost for more than 5 seconds)
+  if (lineCurrentlyLost) {
+    if (lineLostStartTime == 0) { // checking if this is the first moment we noticed the line is lost
+      lineLostStartTime = millis();
+    }else if (millis() - lineLostStartTime >= 5000) { 
+      SetMotorSpeeds(0, 0);  // Stop the motors
+    }
+  } else { // Line is not lost 
+    lineLostStartTime = 0; 
+  }
+
   delay(10);
 }
 
@@ -250,7 +264,7 @@ float CalculateError(){
   int activeSensors = 0;
   float weightedSum = 0;
   for(int i = 2; i < (SENSOR_COUNT-2); i++){ 
-    if(sensorValues[i] == 0){                // Assuming sensors give 0 on black
+    if(sensorValues[i] == 0){                // sensors give 0 on black
         weightedSum += sensorWeights[i];
         activeSensors++;}}
         
@@ -264,13 +278,16 @@ float CalculateError(){
           SetMotorSpeeds(baseSpeed, baseSpeed / 2);
       } else {
           // Bot lost line completely
+          lineCurrentlyLost = true;
           if (previousError > 0) {          // previous error would be positive if the bot left the line from right
               SetMotorSpeeds(baseSpeed / 2, baseSpeed); 
           } else {
               SetMotorSpeeds(baseSpeed, baseSpeed / 2);}
       }
       return 0;
-  }    
+  }
+
+  lineCurrentlyLost = false;
   // If center sensors are active, proceed with normal PID control
   return (weightedSum / activeSensors); // relative position from the center 
 }
@@ -309,11 +326,11 @@ void CalculateMotorSpeeds() {
 // Setting the speed of the motors 
 void SetMotorSpeeds(int leftSpeed, int rightSpeed) {
   // Left motor 
-  digitalWrite(LEFT_MOTOR_DIR, HIGH);  // Forward direction
+  digitalWrite(LEFT_MOTOR_DIR, HIGH);  
   analogWrite(LEFT_MOTOR_PWM, leftSpeed);
   
   // Right motor  
-  digitalWrite(RIGHT_MOTOR_DIR, HIGH);  // Forward direction
+  digitalWrite(RIGHT_MOTOR_DIR, HIGH); 
   analogWrite(RIGHT_MOTOR_PWM, rightSpeed);
   }
   
