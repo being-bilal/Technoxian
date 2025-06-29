@@ -20,7 +20,9 @@ int sensorValues[16];
 //int threshold = 3350;  // Black line gives values above this
 int minVals[16];
 int maxVals[16];
-int normalizedVals[16]; // For debugging or future use
+int normalizedVals[16];
+int lastValidError = 0;  
+
 
 // PID constants (tune these!)
 float Kp = 15;
@@ -64,7 +66,7 @@ void setup() {
   }
 
   Serial.println("Calibrating sensors...");
-    unsigned long startTime = millis();
+  unsigned long startTime = millis();
   while (millis() - startTime < 2000) {
     for (int i = 0; i < 16; i++) {
       setMuxChannel(i);
@@ -73,10 +75,26 @@ void setup() {
   
       if (val < minVals[i]) minVals[i] = val;
       if (val > maxVals[i]) maxVals[i] = val;
+  
+      // Print which sensor is being read
+      Serial.print("Calibrating Sensor ");
+      Serial.print(i);
+      Serial.print(": Value = ");
+      Serial.println(val);
     }
-    delay(5); 
-  }
+    delay(50); // slow down the print rate
+   }
+
   Serial.println("Calibration done.");
+  Serial.println("Final calibrated min/max values:");
+  for (int i = 0; i < 16; i++) {
+    Serial.print("Sensor ");
+    Serial.print(i);
+    Serial.print(" => Min: ");
+    Serial.print(minVals[i]);
+    Serial.print(" | Max: ");
+    Serial.println(maxVals[i]);
+  }
 }
 
 void loop() {
@@ -85,16 +103,24 @@ void loop() {
   int position = getLinePosition();
 
   if (position == -1) {
-    stopMotors();
-    Serial.println("Line lost! All white. Stopping...");
-    delay(100);
-    return;
+  Serial.println("Line lost! Rotating to search...");
+
+  int recoverySpeed = 120;
+  if (lastValidError < 0) {
+    moveMotors(-recoverySpeed, recoverySpeed);
+  } else {
+    moveMotors(recoverySpeed, -recoverySpeed);
+  }
+
+  delay(200); 
+  return;
   }
 
   int baseSpeed = 180;
 
   // PID calculations
   int error = position - 8;
+  lastValidError = error;  // Save for recovery
   integral += error;
   int derivative = error - lastError;
   lastError = error;
