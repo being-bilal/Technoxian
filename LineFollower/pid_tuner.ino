@@ -1,12 +1,13 @@
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
+#include <WiFi.h>
+#include <WebServer.h>
+
 
 // WiFi credentials
 const char* ssid = "Jio 4G.";
 const char* password = "SABAR#123";
 
 // Create WebServer object on port 80
-ESP8266WebServer server(80);
+WebServer server(80);
 
 // --- IR sensor multiplexer ---
 const int SIG_PIN = 15;
@@ -27,6 +28,7 @@ const int PWMB = 26;
 const int STBY = 19;
 
 int sensorValues[16];
+//int threshold = 3350;  // Black line gives values above this
 int minVals[16];
 int maxVals[16];
 int normalizedVals[16];
@@ -49,7 +51,7 @@ int currentError = 0;
 float currentPIDOutput = 0;
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   pinMode(S0, OUTPUT);
   pinMode(S1, OUTPUT);
@@ -106,7 +108,7 @@ void setup() {
   while (millis() - startTime < 4000) {
     for (int i = 0; i < 16; i++) {
       setMuxChannel(i);
-      delayMicroseconds(200);
+      delayMicroseconds(500);
       int val = analogRead(SIG_PIN);
   
       if (val < minVals[i]) minVals[i] = val;
@@ -149,13 +151,10 @@ void loop() {
       moveMotors(-recoverySpeed, recoverySpeed);
       currentLeftSpeed = -recoverySpeed;
       currentRightSpeed = recoverySpeed;
+    } else {
       moveMotors(recoverySpeed, -recoverySpeed);
       currentLeftSpeed = recoverySpeed;
       currentRightSpeed = -recoverySpeed;
-    } else {
-      moveMotors(-recoverySpeed, recoverySpeed);
-      currentLeftSpeed = -recoverySpeed;
-      currentRightSpeed = recoverySpeed;
     }
 
     delay(200); 
@@ -668,7 +667,7 @@ void handleRoot() {
 
         <div class="connection-status">
             <div class="status-dot" id="statusDot"></div>
-            <span id="connectionText">Connected to ESP8266</span>
+            <span id="connectionText">Connected to ESP32</span>
         </div>
 
         <div class="card">
