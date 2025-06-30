@@ -107,9 +107,9 @@ void loop() {
 
   int recoverySpeed = 120;
   if (lastValidError < 0) {
-    moveMotors(-recoverySpeed, recoverySpeed);
-  } else {
     moveMotors(recoverySpeed, -recoverySpeed);
+  } else {
+    moveMotors(-recoverySpeed, recoverySpeed);
   }
 
   delay(200); 
