@@ -149,10 +149,13 @@ void loop() {
       moveMotors(-recoverySpeed, recoverySpeed);
       currentLeftSpeed = -recoverySpeed;
       currentRightSpeed = recoverySpeed;
-    } else {
       moveMotors(recoverySpeed, -recoverySpeed);
       currentLeftSpeed = recoverySpeed;
       currentRightSpeed = -recoverySpeed;
+    } else {
+      moveMotors(-recoverySpeed, recoverySpeed);
+      currentLeftSpeed = -recoverySpeed;
+      currentRightSpeed = recoverySpeed;
     }
 
     delay(200); 
